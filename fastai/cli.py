@@ -1,9 +1,9 @@
-"""Command-line interface for quickai."""
+"""Command-line interface for fastai."""
 
 import argparse
 from pathlib import Path
 
-from quickai.quickai import QuickAI
+from fastai.fastai import FastAI
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -14,6 +14,6 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    bot = QuickAI(workspace=Path(args.workspace).resolve())
+    bot = FastAI(workspace=Path(args.workspace).resolve())
     bot.start()
     return 0

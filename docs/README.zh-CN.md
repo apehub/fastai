@@ -1,10 +1,10 @@
-# QuickAI
+# FastAI
 
-QuickAI 是一个面向软件项目的 AI 脚手架工具。
+FastAI 是一个面向软件项目的 AI 脚手架工具。
 
 它帮助开发者把一个普通代码仓库快速改造成 AI 项目，并随着代码、需求和文档的演进，持续维护项目中的 AI 基础设施。
 
-## QuickAI 能做什么
+## FastAI 能做什么
 
 - 为现有代码仓库初始化 AI 项目基础设施
 - 配置项目记忆、规则、工作流和协作脚手架
@@ -18,12 +18,12 @@ QuickAI 是一个面向软件项目的 AI 脚手架工具。
 
 团队通常需要手动拼装 prompts、rules、memory、hooks 和 workflows，而这些内容会随着项目变化很快过时。
 
-QuickAI 的价值在于降低这部分初始化与维护成本：它把普通项目升级为 AI 项目，并持续保持周边 AI 基础设施处于可用状态。
+FastAI 的价值在于降低这部分初始化与维护成本：它把普通项目升级为 AI 项目，并持续保持周边 AI 基础设施处于可用状态。
 
 ## 典型使用方式
 
 ```bash
-quickai init
+fastai init
 ```
 
 初始化之后，项目可以快速具备：
@@ -36,7 +36,7 @@ quickai init
 
 ## 产品定位
 
-QuickAI 不是 AI IDE。
+FastAI 不是 AI IDE。
 
 它也不是一个“AI 工程团队框架”。
 

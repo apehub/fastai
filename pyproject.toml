@@ -1,5 +1,5 @@
 [project]
-name = "quickai"
+name = "fastai"
 version = "0.1.0"
 description = "An AI scaffolding tool that upgrades software projects into AI-ready projects and keeps their AI infrastructure up to date."
 readme = "README.md"
@@ -18,7 +18,7 @@ classifiers = [
 dependencies = []
 
 [project.scripts]
-quickai = "quickai.__main__:main"
+fastai = "fastai.__main__:main"
 
 [build-system]
 requires = ["hatchling"]

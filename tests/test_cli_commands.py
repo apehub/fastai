@@ -42,17 +42,24 @@ class CliCommandTests(unittest.TestCase):
 
         self.assertEqual(0, completed.returncode)
         self.assertIn("recon", completed.stdout)
+        self.assertNotIn("--workspace", completed.stdout)
 
-    def test_recon_uses_workspace_option(self):
-        workspace = self.workspace / "docs"
-        completed = self.run_cli("--workspace", str(workspace), "recon")
+    def test_no_args_shows_help_without_traceback(self):
+        completed = self.run_cli()
+
+        self.assertEqual(0, completed.returncode)
+        self.assertIn("recon", completed.stdout)
+        self.assertNotIn("Traceback", completed.stderr)
+
+    def test_recon_uses_current_directory_as_workspace(self):
+        completed = self.run_cli("recon")
 
         self.assertEqual(0, completed.returncode)
         self.assertIn("system overview", completed.stdout.lower())
 
     def test_recon_accepts_output_option(self):
         output_path = self.workspace / "tmp" / "overview.md"
-        completed = self.run_cli("--workspace", str(self.workspace), "recon", "--output", str(output_path))
+        completed = self.run_cli("recon", "--output", str(output_path))
 
         self.assertEqual(0, completed.returncode)
         self.assertTrue(output_path.exists())

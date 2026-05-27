@@ -34,7 +34,7 @@ class ReconCommandTests(unittest.TestCase):
         )
 
     def test_recon_writes_system_overview_document(self):
-        completed = self.run_cli("--workspace", str(self.workspace), "recon")
+        completed = self.run_cli("recon")
         output_path = self.workspace / "docs" / "system-overview.md"
 
         self.assertEqual(0, completed.returncode)
@@ -45,7 +45,7 @@ class ReconCommandTests(unittest.TestCase):
         self.assertIn("## Python Modules", content)
 
     def test_recon_summarizes_existing_docs_and_modules(self):
-        completed = self.run_cli("--workspace", str(self.workspace), "recon")
+        completed = self.run_cli("recon")
         output_path = self.workspace / "docs" / "system-overview.md"
         content = output_path.read_text(encoding="utf-8")
 

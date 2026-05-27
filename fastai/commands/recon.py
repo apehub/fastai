@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Any
 
-import typer
-
-from fastai.commands.base import BaseCommand, Command
+from fastai.commands.base import BaseCommand, Command, CommandOption
 from fastai.commands.context import CommandContext
 from fastai.recon import build_system_overview
 
@@ -15,33 +13,20 @@ from fastai.recon import build_system_overview
 @Command(
     name="recon",
     description="Project reconnaissance.",
-    short_help="Scan project docs and module structure",
+    usage="Scan project docs and module structure",
     group="project",
+    options=[
+        CommandOption(
+            name="output",
+            flags=("--output",),
+            annotation=Path | None,
+            default=None,
+            help="Write the generated system overview to this path.",
+        )
+    ],
 )
 class ReconCommand(BaseCommand):
     """Inspect the current project at a high level."""
-
-    def get_typer_callback(self):
-        def callback(
-            ctx: typer.Context,
-            output: Annotated[
-                Path | None,
-                typer.Option(
-                    "--output",
-                    help="Write the generated system overview to this path.",
-                    file_okay=True,
-                    dir_okay=False,
-                    writable=True,
-                    resolve_path=False,
-                ),
-            ] = None,
-        ) -> int:
-            command_context = CommandContext(
-                workspace=Path(ctx.obj["workspace"]).resolve()
-            )
-            return self.run(command_context, output=output)
-
-        return callback
 
     def run(self, context: CommandContext, **kwargs: Any) -> int:
         output_path = kwargs.get("output") or (

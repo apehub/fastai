@@ -7,14 +7,13 @@ from pathlib import Path
 from unittest.mock import patch
 
 from fastai.commands.base import BaseCommand, Command, CommandContext, CommandOption
+from fastai.commands.base import CommandDiscovery, CommandRegistry
 import fastai.commands as commands_pkg
 from fastai.commands import BaseCommand as ExportedBaseCommand
 from fastai.commands import CommandDiscovery as ExportedCommandDiscovery
 from fastai.commands import CommandRegistry as ExportedCommandRegistry
 from fastai.fastai import app as exported_app
 from fastai.fastai import main as exported_main
-from fastai.commands.discovery import CommandDiscovery
-from fastai.commands.registry import CommandRegistry
 
 
 class CommandDiscoveryTests(unittest.TestCase):
@@ -97,6 +96,20 @@ class CommandDiscoveryTests(unittest.TestCase):
         finally:
             CommandRegistry.REGISTRY = previous_registry
 
+    def test_command_metadata_does_not_expose_group(self):
+        previous_registry = CommandRegistry.REGISTRY
+        CommandRegistry.REGISTRY = {}
+
+        try:
+            @Command(name="groupless", description="Sample command")
+            class SampleCommand(BaseCommand):
+                def run(self, context: CommandContext) -> int:
+                    return 0
+
+            self.assertFalse(hasattr(SampleCommand.meta, "group"))
+        finally:
+            CommandRegistry.REGISTRY = previous_registry
+
     def test_command_can_build_typer_callback_signature(self):
         @Command(
             name="sample",
@@ -129,7 +142,7 @@ class CommandDiscoveryTests(unittest.TestCase):
                 "\n".join(
                     [
                         "from fastai.commands.base import BaseCommand, Command",
-                        "from fastai.commands.context import CommandContext",
+                        "from fastai.commands.base import CommandContext",
                         "",
                         "@Command(name='decorated', description='Decorated command', usage='Decorated usage')",
                         "class DecoratedCommand(BaseCommand):",

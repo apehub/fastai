@@ -2,19 +2,32 @@
 
 from __future__ import annotations
 
+import importlib
 import inspect
+import pkgutil
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+import sys
 from typing import Any
 from typing import ClassVar
 from typing import TypeVar
 
-from fastai.commands.context import CommandContext
 import typer  # type: ignore[reportMissingImports]
 
+import fastai.commands as commands_pkg
+
 _CommandT = TypeVar("_CommandT", bound="BaseCommand")
+_SKIP_MODULES = frozenset({"__init__", "base"})
+
+
+# command context
+@dataclass(slots=True)
+class CommandContext:
+    """Shared runtime context for command execution."""
+
+    workspace: Path
 
 
 # command option
@@ -37,7 +50,6 @@ class CommandMeta:
     name: str
     description: str
     usage: str = ""
-    group: str = "project"
     options: tuple[CommandOption, ...] = ()
 
 
@@ -100,6 +112,52 @@ class BaseCommand(ABC):
     def run(self, context: CommandContext, **kwargs: Any) -> int:
         """Execute the command."""
 
+# command registry
+class CommandRegistry:
+    """Store command classes by their declared CLI name."""
+
+    REGISTRY: ClassVar[dict[str, type[BaseCommand]]] = {}
+
+    @classmethod
+    def register(cls, command_cls: type[BaseCommand]) -> None:
+        name = command_cls.name()
+        if name in cls.REGISTRY:
+            raise ValueError(f"Command {name!r} is already registered")
+        cls.REGISTRY[name] = command_cls
+
+    @classmethod
+    def list_commands(cls) -> list[type[BaseCommand]]:
+        return sorted(
+            cls.REGISTRY.values(),
+            key=lambda command_cls: command_cls.meta.name,
+        )
+
+    @classmethod
+    def clear(cls) -> None:
+        cls.REGISTRY.clear()
+
+# fastai command discovery
+class CommandDiscovery:
+    """Discover built-in command classes."""
+
+    @classmethod
+    def discover(cls) -> list[type[BaseCommand]]:
+        """Return built-in command classes discovered in ``fastai.commands``."""
+
+        CommandRegistry.clear()
+
+        for _finder, module_name, _is_pkg in pkgutil.iter_modules(commands_pkg.__path__):
+            if module_name.startswith("_") or module_name in _SKIP_MODULES:
+                continue
+
+            module_path = f"{commands_pkg.__name__}.{module_name}"
+            if module_path in sys.modules:
+                importlib.reload(sys.modules[module_path])
+            else:
+                importlib.import_module(module_path)
+
+        return CommandRegistry.list_commands()
+
 
 # @Command decorator
 def Command(
@@ -107,7 +165,6 @@ def Command(
     name: str,
     description: str,
     usage: str = "",
-    group: str = "project",
     options: list[CommandOption] | tuple[CommandOption, ...] = (),
 ) -> Callable[[type[_CommandT]], type[_CommandT]]:
     """Decorate and register a command class."""
@@ -116,7 +173,6 @@ def Command(
         name=name,
         description=description,
         usage=usage,
-        group=group,
         options=tuple(options),
     )
 
@@ -124,8 +180,6 @@ def Command(
         """Decorate and register a command class."""
 
         cls.meta = meta
-
-        from fastai.commands.registry import CommandRegistry
 
         CommandRegistry.register(cls)
         return cls

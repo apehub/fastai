@@ -2,3 +2,4 @@ __pycache__/
 *.py[cod]
 fastai.code-workspace
 uv.lock
+.worktrees

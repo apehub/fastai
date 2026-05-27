@@ -15,7 +15,9 @@ classifiers = [
     "Topic :: Software Development :: Build Tools",
     "Topic :: Software Development :: Documentation",
 ]
-dependencies = []
+dependencies = [
+    "typer>=0.26.1",
+]
 
 [project.scripts]
 fastai = "fastai.__main__:main"

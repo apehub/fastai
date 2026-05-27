@@ -1,5 +1,5 @@
 """Public package interface for fastai."""
 
-from fastai.fastai import FastAI
+from fastai.fastai import app, main
 
-__all__ = ["FastAI"]
+__all__ = ["app", "main"]

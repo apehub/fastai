@@ -1,17 +1,41 @@
-"""
-main entry point for the fastai application
-"""
+"""Main CLI entrypoints for the fastai application."""
 
-from pathlib import Path
+from __future__ import annotations
+
+import typer  # type: ignore[reportMissingImports]
+
+from fastai.commands import CommandDiscovery
+
+app = typer.Typer(
+    name="fastai",
+    help="FastAI command-line interface.",
+    no_args_is_help=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 
 
-class FastAI:
-    """FastAI class"""
+def _register_commands() -> None:
+    for command_cls in CommandDiscovery.discover():
+        command = command_cls()
+        meta = command.meta
 
-    def __init__(self, workspace: str | Path):
-        """Initialize the FastAI class"""
-        self.workspace = workspace
+        app.command(
+            name=meta.name,
+            help=meta.description,
+            short_help=meta.usage or meta.description,
+        )(command.typer_callback())
 
-    def start(self):
-        """Start the FastAI application"""
-        print(f"Starting FastAI in workspace: {self.workspace}")
+
+@app.callback()
+def _callback() -> None:
+    return None
+
+
+def main(argv: list[str] | None = None) -> int:
+    try:
+        _register_commands()
+        return app(args=argv, standalone_mode=False) or 0
+    except Exception as exc:
+        if type(exc).__name__ == "NoArgsIsHelpError":
+            return 0
+        raise

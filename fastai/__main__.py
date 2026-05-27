@@ -1,6 +1,6 @@
 """Module entry point for the fastai package."""
 
-from fastai.cli import main
+from fastai.fastai import main
 
 
 if __name__ == "__main__":

@@ -11,6 +11,8 @@ import fastai.commands as commands_pkg
 from fastai.commands import BaseCommand as ExportedBaseCommand
 from fastai.commands import CommandDiscovery as ExportedCommandDiscovery
 from fastai.commands import CommandRegistry as ExportedCommandRegistry
+from fastai.fastai import app as exported_app
+from fastai.fastai import main as exported_main
 from fastai.commands.discovery import CommandDiscovery
 from fastai.commands.registry import CommandRegistry
 
@@ -20,6 +22,10 @@ class CommandDiscoveryTests(unittest.TestCase):
         self.assertIs(ExportedBaseCommand, BaseCommand)
         self.assertIs(ExportedCommandDiscovery, CommandDiscovery)
         self.assertIs(ExportedCommandRegistry, CommandRegistry)
+
+    def test_fastai_module_exports_cli_entrypoints(self):
+        self.assertTrue(callable(exported_main))
+        self.assertIsNotNone(exported_app)
 
     def test_discover_commands_includes_recon(self):
         command_names = [command_cls.meta.name for command_cls in CommandDiscovery.discover()]

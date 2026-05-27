@@ -51,7 +51,7 @@ class ReconCommandTests(unittest.TestCase):
 
         self.assertEqual(0, completed.returncode)
         self.assertIn("FastAI_Product_Overview.md", content)
-        self.assertIn("fastai/cli.py", content)
+        self.assertIn("fastai/fastai.py", content)
         self.assertIn("fastai/commands/recon.py", content)
 
 

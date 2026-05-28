@@ -7,27 +7,27 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from fastai.commands.recon.collectors import WorkspaceReconCollector
-from fastai.commands.recon.models import FactRequest, FactRequestKind, ReconFacts
-from fastai.commands.recon.orchestrator import ReconOrchestrator
-from fastai.commands.recon.protocol import (
+from fastai.recon.collectors import WorkspaceReconCollector
+from fastai.recon.models import FactRequest, FactRequestKind, ReconFacts
+from fastai.recon.orchestrator import ReconOrchestrator
+from fastai.recon.protocol import (
     NullReconAnalyzer,
     NullReconPlanner,
     ReconAnalyzer,
     ReconPlanner,
 )
-from fastai.commands.recon.renderer import OverviewRenderer
+from fastai.recon.renderer import OverviewRenderer
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 class ReconPipelineTests(unittest.TestCase):
     def test_recon_package_reexports_pipeline_modules(self):
-        from fastai.commands.recon.collectors import WorkspaceReconCollector as Collector
-        from fastai.commands.recon.models import ReconFacts as Facts
-        from fastai.commands.recon.orchestrator import ReconOrchestrator as Orchestrator
-        from fastai.commands.recon.protocol import ReconPlanner as Planner
-        from fastai.commands.recon.renderer import OverviewRenderer as Renderer
+        from fastai.recon.collectors import WorkspaceReconCollector as Collector
+        from fastai.recon.models import ReconFacts as Facts
+        from fastai.recon.orchestrator import ReconOrchestrator as Orchestrator
+        from fastai.recon.protocol import ReconPlanner as Planner
+        from fastai.recon.renderer import OverviewRenderer as Renderer
 
         self.assertIs(Collector, WorkspaceReconCollector)
         self.assertIs(Facts, ReconFacts)

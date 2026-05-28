@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastai.commands.recon.models import ReconAnalysis, ReconFacts
+from fastai.recon.models import ReconAnalysis, ReconFacts
 
 
 class OverviewRenderer:

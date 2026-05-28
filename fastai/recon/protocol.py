@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from fastai.commands.recon.models import FactRequest, ReconAnalysis, ReconFacts
+from fastai.recon.models import FactRequest, ReconAnalysis, ReconFacts
 
 
 class ReconPlanner(ABC):

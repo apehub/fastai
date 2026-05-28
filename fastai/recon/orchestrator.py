@@ -3,15 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from fastai.commands.recon.collectors import WorkspaceReconCollector
-from fastai.commands.recon.models import FactRequest, ReconFacts, ReconRunResult
-from fastai.commands.recon.protocol import (
+from fastai.recon.collectors import WorkspaceReconCollector
+from fastai.recon.models import FactRequest, ReconFacts, ReconRunResult
+from fastai.recon.protocol import (
     NullReconAnalyzer,
     NullReconPlanner,
     ReconAnalyzer,
     ReconPlanner,
 )
-from fastai.commands.recon.renderer import OverviewRenderer
+from fastai.recon.renderer import OverviewRenderer
 
 
 @dataclass(slots=True, frozen=True)

@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 
-from fastai.commands.recon.models import (
+from fastai.recon.models import (
     DocumentationFacts,
     EcosystemCandidate,
     FactRequest,

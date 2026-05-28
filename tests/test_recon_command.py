@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import shutil
 import subprocess
 import sys
@@ -53,14 +52,7 @@ class ReconCommandTests(unittest.TestCase):
         self.assertEqual(0, completed.returncode)
         self.assertIn("FastAI_Product_Overview.md", content)
         self.assertIn("fastai/fastai.py", content)
-        self.assertIn("fastai/commands/recon/__init__.py", content)
-
-    def test_recon_helpers_live_with_command_module(self):
-        module = importlib.import_module("fastai.commands.recon")
-
-        self.assertTrue(callable(module.build_system_overview))
-        self.assertTrue(callable(module.iter_markdown_files))
-        self.assertTrue(callable(module.iter_python_modules))
+        self.assertIn("fastai/commands/recon.py", content)
 
 
 if __name__ == "__main__":

@@ -4,8 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from fastai.commands.base import BaseCommand, Command, CommandContext, CommandOption
-from fastai.commands.recon.collectors import WorkspaceReconCollector
-from fastai.commands.recon.orchestrator import ReconOrchestrator
+from fastai.recon.orchestrator import ReconOrchestrator
 
 
 @Command(
@@ -47,21 +46,3 @@ class ReconCommand(BaseCommand):
         output_path.write_text(result.overview_markdown, encoding="utf-8")
         print(f"Wrote system overview to {output_path}")
         return 0
-
-
-def iter_markdown_files(workspace: Path) -> list[Path]:
-    """Facade helper retained for tests and future command-local usage."""
-
-    return WorkspaceReconCollector().iter_markdown_files(workspace)
-
-
-def iter_python_modules(workspace: Path) -> list[Path]:
-    """Facade helper retained for tests and future command-local usage."""
-
-    return WorkspaceReconCollector().iter_python_modules(workspace)
-
-
-def build_system_overview(workspace: Path) -> str:
-    """Build the current overview markdown for a workspace."""
-
-    return ReconOrchestrator().run(workspace).overview_markdown

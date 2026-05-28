@@ -43,7 +43,7 @@ class GlanceTests(unittest.TestCase):
         scm = FakeSCM({self.workspace / "build"})
 
         with patch("fastai.recon.glance.SCM.detect", return_value=scm):
-            facts = Glance().run(self.workspace)
+            facts = Glance.run(self.workspace)
 
         self.assertEqual({".md": 1, ".py": 1}, facts.fileTypeCounts)
 

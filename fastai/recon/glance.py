@@ -31,10 +31,12 @@ COMMON_IGNORED_DIRS = {
     "node_modules",
 }
 
+
 class Glance:
     """Glance into the project to get a quick overview."""
 
-    def run(cls, workspace: Path) -> GlanceFacts:
+    @staticmethod
+    def run(workspace: Path) -> GlanceFacts:
         """Glance into the project to get a quick overview."""
 
         scm = SCM.detect(workspace)
@@ -53,14 +55,19 @@ class Glance:
             path.relative_to(base)
             for path in workspace.iterdir()
             if path.is_dir()
-            and (path.name.startswith(".") or path.name in COMMON_IGNORED_DIRS or scm.ignored(path))
+            and (
+                path.name.startswith(".")
+                or path.name in COMMON_IGNORED_DIRS
+                or scm.ignored(path)
+            )
         )
         ignoredDirSet = set(ignoredDirs)
 
         def isIgnoredPath(path: Path) -> bool:
             rel = path.relative_to(base)
             return any(
-                part.startswith(".") or part in COMMON_IGNORED_DIRS for part in rel.parts[:-1]
+                part.startswith(".") or part in COMMON_IGNORED_DIRS
+                for part in rel.parts[:-1]
             ) or any(parent in ignoredDirSet for parent in rel.parents)
 
         # get file counts by type(skip ignored files from SCM ignore list)

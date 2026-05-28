@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from fastai.recon.collectors import WorkspaceReconCollector
+from fastai.recon.glance import Glance
 from fastai.recon.models import FactRequest, ReconFacts, ReconRunResult
 from fastai.recon.protocol import (
     NullReconAnalyzer,
@@ -25,22 +26,8 @@ class ReconBudget:
 class ReconOrchestrator:
     """Coordinate the recon collection, planning and rendering loop."""
 
-    def __init__(
-        self,
-        *,
-        collector: WorkspaceReconCollector | None = None,
-        planner: ReconPlanner | None = None,
-        analyzer: ReconAnalyzer | None = None,
-        renderer: OverviewRenderer | None = None,
-        budget: ReconBudget | None = None,
-    ) -> None:
-        self.collector = collector or WorkspaceReconCollector()
-        self.planner = planner or NullReconPlanner()
-        self.analyzer = analyzer or NullReconAnalyzer()
-        self.renderer = renderer or OverviewRenderer()
-        self.budget = budget or ReconBudget()
-
-    def run(self, workspace: Path) -> ReconRunResult:
+    @staticmethod
+    def run(workspace: Path) -> ReconRunResult:
         """Run a single synchronous recon pass.
 
         This method intentionally wires the full phase structure now while
@@ -58,18 +45,9 @@ class ReconOrchestrator:
         control flow visible without committing to a concrete AI runtime yet.
         """
 
-        facts = self.collector.collect_base_facts(workspace)
-        requests = self._plan_requests(facts)
-        if requests:
-            facts = self.collector.collect_requested_facts(workspace, facts, requests)
-        analysis = self.analyzer.analyze(facts)
-        overview_markdown = self.renderer.render(facts, analysis)
-        return ReconRunResult(
-            facts=facts,
-            requests=requests,
-            analysis=analysis,
-            overview_markdown=overview_markdown,
-        )
+        # get the glance facts
+        glance = Glance.run(workspace)
+        # TODO: request AI agent to analyze the workspace by glance facts
 
     def _plan_requests(self, facts: ReconFacts) -> list[FactRequest]:
         requests = self.planner.plan_requests(facts)

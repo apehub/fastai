@@ -18,18 +18,12 @@ Project reconnaissance.
 - 写入 FastAI 所需的项目元数据和目录结构  
 - 生成初始 rules / memory / workflow / docs scaffold  
 
+流程:
+- select: 选择项目使用的本地 Coding Agent  
+- analyse: 对当前工作区进行分析, 并根据项目情况给出推荐的 AI 工具配置。
+  如: rules(code style)/skills 等。
+- config: 以交互式或全自动的方式将配置落实到项目中。
 
-### fastai sync
-
-对当前项目执行一次显式同步。
-
-职责：
-- 对比代码、文档、规则、memory 的变动  
-- 更新派生 AI 资产  
-- 修正过期的索引/摘要/上下文  
-- 必要时给出变更建议或生成 patch 预览  
-
-它是手动触发版的“maintenance loop”
 
 ## FastAI 服务相关命令
 

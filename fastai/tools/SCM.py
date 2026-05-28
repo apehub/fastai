@@ -12,10 +12,11 @@ class SCMError(RuntimeError):
 
 # Base class for SCM tools.
 class SCM(ABC):
-    """SCM tools: git, svn, cvs, hg, etc."""
+    """SCM tools: git, svn."""
 
     MARKER: ClassVar[str] = ""
     workbase: Path
+    url: str
 
     def __init__(self, workbase: Path):
         self.workbase = workbase
@@ -23,9 +24,12 @@ class SCM(ABC):
     @staticmethod
     def detect(workbase: Path) -> SCM | None:
         """Detect the SCM type in the workspace."""
-        for scm in (Git, Subversion, Mercurial):
-            if (workbase / scm.MARKER).exists():
-                return scm(workbase)
+
+        for kind in (Git, Subversion):
+            if (workbase / kind.MARKER).exists():
+                scm = kind(workbase)
+                scm.url = scm.repo()
+                return scm
         return None
 
     def run(self, command: list[str], *, lines: bool = False) -> str | list[str]:
@@ -51,6 +55,11 @@ class SCM(ABC):
         """Get the repository URL."""
         raise NotImplementedError
 
+    @abstractmethod
+    def ignored(self, path: Path) -> bool:
+        """Check if a path is ignored."""
+        raise NotImplementedError
+
 
 # Git SCM tool.
 class Git(SCM):
@@ -61,6 +70,10 @@ class Git(SCM):
     def repo(self) -> str:
         """Get the repository URL."""
         return self.run(["git", "config", "--get", "remote.origin.url"])
+
+    def ignored(self, path: Path) -> bool:
+        """Check if a path is ignored."""
+        return self.run(["git", "check-ignore", path.as_posix()]) == 0
 
 
 # Subversion SCM tool.
@@ -73,13 +86,8 @@ class Subversion(SCM):
         """Get the repository URL."""
         return self.run(["svn", "info", "--show-item", "url"])
 
-
-# Mercurial SCM tool.
-class Mercurial(SCM):
-    """Mercurial SCM tool."""
-
-    MARKER: ClassVar[str] = ".hg"
-
-    def repo(self) -> str:
-        """Get the repository URL."""
-        return self.run(["hg", "showconfig", "paths.default"])
+    def ignored(self, path: Path) -> bool:
+        """Check if a path is ignored."""
+        info = self.run(["svn", "status", "--no-ignore", path.as_posix()])
+        # ignored item starts with 'I'
+        return info.startswith('I')

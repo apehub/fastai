@@ -9,24 +9,25 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from fastai.tools.SCM import Git, Mercurial, SCM, SCMError, Subversion
+from fastai.tools.SCM import Git, SCM, SCMError, Subversion
 
 
 class ScmTests(unittest.TestCase):
     def test_each_scm_class_exposes_its_marker(self):
         self.assertEqual(".git", Git.MARKER)
         self.assertEqual(".svn", Subversion.MARKER)
-        self.assertEqual(".hg", Mercurial.MARKER)
 
     def test_detect_returns_matching_scm_instance(self):
         with tempfile.TemporaryDirectory(prefix="fastai-scm-") as temp_dir:
             workspace = Path(temp_dir)
             (workspace / ".git").mkdir()
 
-            detected = SCM.detect(workspace)
+            with patch.object(Git, "repo", return_value="git@example.com:repo.git"):
+                detected = SCM.detect(workspace)
 
         self.assertIsInstance(detected, Git)
         self.assertEqual(workspace, detected.workbase)
+        self.assertEqual("git@example.com:repo.git", detected.url)
 
     def test_detect_returns_none_when_workspace_has_no_supported_marker(self):
         with tempfile.TemporaryDirectory(prefix="fastai-scm-") as temp_dir:

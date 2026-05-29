@@ -10,7 +10,7 @@ from fastai.recon.protocol import NullReconAnalyzer
 from fastai.recon.renderer import OverviewRenderer
 
 if TYPE_CHECKING:
-    from fastai.agents.local import AgentRuntime
+    from fastai.agents.runtimes import AgentRuntime
 
 
 @dataclass(slots=True, frozen=True)
@@ -41,7 +41,7 @@ class ReconOrchestrator:
         # Imported lazily to avoid an import cycle: the agents package depends
         # on fastai.recon.models, and fastai.recon.__init__ imports this module.
         from fastai.agents.flows.recon import ReconFlow
-        from fastai.agents.local import AgentRuntime
+        from fastai.agents.runtimes import AgentRuntime
 
         facts = WorkspaceReconCollector().collect_base_facts(workspace)
 

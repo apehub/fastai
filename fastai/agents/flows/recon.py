@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from fastai.agents.flow import AgentFlow
-from fastai.agents.local import AgentResult
+from fastai.agents.runtimes import AgentResult
 from fastai.recon.models import ReconAnalysis, ReconFacts
 
 _SCHEMA_HINT = (

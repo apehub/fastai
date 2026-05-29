@@ -1,16 +1,16 @@
 from fastai.agents.flow import AgentFlow
 from fastai.agents.flows.recon import ReconFlow
-from fastai.agents.local import (
+from fastai.agents.runtimes import (
     AgentInvokeOptions,
     AgentResult,
     AgentRuntime,
-    ClaudeCodeAgent,
-    CodexAgent,
-    CopilotAgent,
-    CursorAgent,
-    GeminiAgent,
-    HermesAgent,
-    OpenCodeAgent,
+    ClaudeRuntime,
+    CodexRuntime,
+    CopilotRuntime,
+    CursorRuntime,
+    GeminiRuntime,
+    HermesRuntime,
+    OpenCodeRuntime,
 )
 
 __all__ = [
@@ -18,12 +18,12 @@ __all__ = [
     "AgentInvokeOptions",
     "AgentResult",
     "AgentRuntime",
-    "ClaudeCodeAgent",
-    "CodexAgent",
-    "CopilotAgent",
-    "CursorAgent",
-    "GeminiAgent",
-    "HermesAgent",
-    "OpenCodeAgent",
+    "ClaudeRuntime",
+    "CodexRuntime",
+    "CopilotRuntime",
+    "CursorRuntime",
+    "GeminiRuntime",
+    "HermesRuntime",
+    "OpenCodeRuntime",
     "ReconFlow",
 ]

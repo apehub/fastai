@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 
 from fastai.agents.flows.recon import ReconFlow
-from fastai.agents.local import AgentInvokeOptions, AgentResult, AgentRuntime
+from fastai.agents.runtimes import AgentInvokeOptions, AgentResult, AgentRuntime
 from fastai.recon.models import (
     DocumentationFacts,
     EcosystemCandidate,
@@ -118,14 +118,14 @@ def test_orchestrator_degrades_without_runtime() -> None:
     try:
         (workspace / "app.py").write_text("print('hi')\n")
         # force "no agent installed"
-        import fastai.agents.local as local
+        import fastai.agents.runtimes as runtimes
 
-        original = local.AgentRuntime.detect
-        local.AgentRuntime.detect = staticmethod(lambda: [])
+        original = runtimes.AgentRuntime.detect
+        runtimes.AgentRuntime.detect = staticmethod(lambda: [])
         try:
             result = ReconOrchestrator.run(workspace)
         finally:
-            local.AgentRuntime.detect = original
+            runtimes.AgentRuntime.detect = original
     finally:
         shutil.rmtree(workspace)
 

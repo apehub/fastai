@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Generic, TypeVar
 
-from fastai.agents.local import AgentInvokeOptions, AgentResult, AgentRuntime
+from fastai.agents.runtimes import AgentInvokeOptions, AgentResult, AgentRuntime
 
 TInput = TypeVar("TInput")
 TOutput = TypeVar("TOutput")

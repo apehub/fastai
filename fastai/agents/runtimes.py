@@ -66,13 +66,13 @@ class AgentRuntime:
                 ok=False,
                 text="",
                 raw="",
-                error=f"{self.cli or 'agent'} not found on PATH",
+                error=f"{self.cli or 'runtime'} not found on PATH",
             )
 
-        argv = self.build_argv(prompt, options)
+        args = self.build_args(prompt, options)
         try:
             proc = subprocess.run(
-                argv,
+                args,
                 cwd=str(options.workspace) if options.workspace is not None else None,
                 capture_output=True,
                 text=True,
@@ -95,26 +95,23 @@ class AgentRuntime:
             )
 
         raw = proc.stdout or ""
-        text = self._parse_output(raw)
+        text = self.parse_output(raw)
         if proc.returncode != 0:
             error = (proc.stderr or "").strip() or f"{self.cli} exited with code {proc.returncode}"
             return AgentResult(ok=False, text=text, raw=raw, error=error)
         return AgentResult(ok=True, text=text, raw=raw)
 
-    def build_argv(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
-        """Build the process argv for a single prompt invocation."""
+    def build_args(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
+        """Build the process arguments for a single prompt invocation."""
         return [self.cli, prompt, *options.extra_args]
 
-    def _parse_output(self, stdout: str) -> str:
-        """Extract assistant text from CLI output.
+    def parse_output(self, raw: str) -> str:
+        """Extract assistant text from this runtime's raw output."""
+        return raw.strip()
 
-        The default handles newline-delimited stream-json (Cursor/Claude
-        style): it concatenates assistant/text events and falls back to the
-        final ``result`` event. Non-JSON output is returned stripped, as-is.
-        Subclasses may override for other output conventions.
-        """
-
-        stripped = stdout.strip()
+    def _parse_stream_json_output(self, raw: str) -> str:
+        """Extract text from newline-delimited stream-json output."""
+        stripped = raw.strip()
         if not stripped:
             return ""
 
@@ -173,24 +170,24 @@ class AgentRuntime:
         """Detect all local coding-agent runtimes installed on the system."""
 
         candidates = [
-            CursorAgent(),
-            CodexAgent(),
-            ClaudeCodeAgent(),
-            OpenCodeAgent(),
-            CopilotAgent(),
+            CursorRuntime(),
+            CodexRuntime(),
+            ClaudeRuntime(),
+            OpenCodeRuntime(),
+            CopilotRuntime(),
         ]
         # keep only runtimes whose CLI is resolvable on the system PATH
         return [runtime for runtime in candidates if runtime.available()]
 
 
 # cursor agent
-class CursorAgent(AgentRuntime):
+class CursorRuntime(AgentRuntime):
     """Cursor agent."""
 
     cli: str = "cursor-agent"
 
-    def build_argv(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
-        argv = [
+    def build_args(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
+        args = [
             self.cli,
             "-p",
             prompt,
@@ -199,33 +196,36 @@ class CursorAgent(AgentRuntime):
             "--yolo",
         ]
         if options.workspace is not None:
-            argv.extend(["--workspace", options.workspace.as_posix()])
+            args.extend(["--workspace", options.workspace.as_posix()])
         if options.model:
-            argv.extend(["--model", options.model])
+            args.extend(["--model", options.model])
         if options.resume_session_id:
-            argv.extend(["--resume", options.resume_session_id])
-        argv.extend(options.extra_args)
-        return argv
+            args.extend(["--resume", options.resume_session_id])
+        args.extend(options.extra_args)
+        return args
+
+    def parse_output(self, raw: str) -> str:
+        return self._parse_stream_json_output(raw)
 
 
 # codex agent
-class CodexAgent(AgentRuntime):
+class CodexRuntime(AgentRuntime):
     """Codex agent."""
 
     cli: str = "codex"
 
-    def build_argv(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
+    def build_args(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
         return [self.cli, "app-server", "--listen", "stdio://", *options.extra_args]
 
 
 # claude code agent
-class ClaudeCodeAgent(AgentRuntime):
+class ClaudeRuntime(AgentRuntime):
     """Claude code agent."""
 
     cli: str = "claude"
 
-    def build_argv(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
-        argv = [
+    def build_args(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
+        args = [
             self.cli,
             "-p",
             prompt,
@@ -239,21 +239,24 @@ class ClaudeCodeAgent(AgentRuntime):
             "bypassPermissions",
         ]
         if options.model:
-            argv.extend(["--model", options.model])
+            args.extend(["--model", options.model])
         if options.resume_session_id:
-            argv.extend(["--resume", options.resume_session_id])
-        argv.extend(options.extra_args)
-        return argv
+            args.extend(["--resume", options.resume_session_id])
+        args.extend(options.extra_args)
+        return args
+
+    def parse_output(self, raw: str) -> str:
+        return self._parse_stream_json_output(raw)
 
 
 # copilot agent
-class CopilotAgent(AgentRuntime):
+class CopilotRuntime(AgentRuntime):
     """Copilot agent."""
 
     cli: str = "copilot"
 
-    def build_argv(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
-        argv = [
+    def build_args(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
+        args = [
             self.cli,
             "-p",
             prompt,
@@ -263,19 +266,19 @@ class CopilotAgent(AgentRuntime):
             "--no-ask-user",
         ]
         if options.model:
-            argv.extend(["--model", options.model])
-        argv.extend(options.extra_args)
-        return argv
+            args.extend(["--model", options.model])
+        args.extend(options.extra_args)
+        return args
 
 
 # opencode agent
-class OpenCodeAgent(AgentRuntime):
+class OpenCodeRuntime(AgentRuntime):
     """OpenCode agent."""
 
     cli: str = "opencode"
 
-    def build_argv(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
-        argv = [
+    def build_args(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
+        args = [
             self.cli,
             "run",
             prompt,
@@ -284,30 +287,33 @@ class OpenCodeAgent(AgentRuntime):
             "--dangerously-skip-permissions",
         ]
         if options.model:
-            argv.extend(["--model", options.model])
-        argv.extend(options.extra_args)
-        return argv
+            args.extend(["--model", options.model])
+        args.extend(options.extra_args)
+        return args
 
 
 # gemini agent
-class GeminiAgent(AgentRuntime):
+class GeminiRuntime(AgentRuntime):
     """Gemini agent."""
 
     cli: str = "gemini"
 
-    def build_argv(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
-        argv = [self.cli, "-p", prompt, "--yolo", "-o", "stream-json"]
+    def build_args(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
+        args = [self.cli, "-p", prompt, "--yolo", "-o", "stream-json"]
         if options.model:
-            argv.extend(["--model", options.model])
-        argv.extend(options.extra_args)
-        return argv
+            args.extend(["--model", options.model])
+        args.extend(options.extra_args)
+        return args
+
+    def parse_output(self, raw: str) -> str:
+        return self._parse_stream_json_output(raw)
 
 
 # hermes agent
-class HermesAgent(AgentRuntime):
+class HermesRuntime(AgentRuntime):
     """Hermes agent."""
 
     cli: str = "hermes"
 
-    def build_argv(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
+    def build_args(self, prompt: str, options: AgentInvokeOptions) -> list[str]:
         return [self.cli, "acp", *options.extra_args]

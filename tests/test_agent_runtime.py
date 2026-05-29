@@ -4,63 +4,64 @@ import subprocess
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from fastai.agents import local
-from fastai.agents.local import (
+from fastai.agents import runtimes
+from fastai.agents.runtimes import (
     AgentInvokeOptions,
     AgentRuntime,
-    ClaudeCodeAgent,
-    CodexAgent,
-    CopilotAgent,
-    CursorAgent,
-    GeminiAgent,
-    HermesAgent,
-    OpenCodeAgent,
+    ClaudeRuntime,
+    CodexRuntime,
+    CopilotRuntime,
+    CursorRuntime,
+    GeminiRuntime,
+    HermesRuntime,
+    OpenCodeRuntime,
 )
 
 
 def test_runtime_cli_defaults() -> None:
-    assert CursorAgent.cli == "cursor-agent"
+    assert CursorRuntime.cli == "cursor-agent"
 
-    assert CodexAgent.cli == "codex"
+    assert CodexRuntime.cli == "codex"
 
-    assert ClaudeCodeAgent.cli == "claude"
+    assert ClaudeRuntime.cli == "claude"
 
-    assert CopilotAgent.cli == "copilot"
+    assert CopilotRuntime.cli == "copilot"
 
-    assert OpenCodeAgent.cli == "opencode"
+    assert OpenCodeRuntime.cli == "opencode"
 
-    assert GeminiAgent.cli == "gemini"
+    assert GeminiRuntime.cli == "gemini"
 
-    assert HermesAgent.cli == "hermes"
+    assert HermesRuntime.cli == "hermes"
 
 
 def test_only_mainstream_runtimes_are_exposed() -> None:
-    agent_names = {name for name in vars(local) if name.endswith("Agent")}
+    runtime_names = {name for name in vars(runtimes) if name.endswith("Runtime")}
 
-    assert agent_names == {
-        "ClaudeCodeAgent",
-        "CodexAgent",
-        "CopilotAgent",
-        "CursorAgent",
-        "GeminiAgent",
-        "HermesAgent",
-        "OpenCodeAgent",
+    assert runtime_names == {
+        "AgentRuntime",
+        "ClaudeRuntime",
+        "CodexRuntime",
+        "CopilotRuntime",
+        "CursorRuntime",
+        "GeminiRuntime",
+        "HermesRuntime",
+        "OpenCodeRuntime",
     }
 
 
 def test_available_resolves_cli_on_path() -> None:
-    agent = CursorAgent()
+    runtime = CursorRuntime()
 
-    with patch.object(local.shutil, "which", return_value="/usr/bin/cursor-agent") as which:
-        assert agent.available() is True
+    with patch.object(runtimes.shutil, "which", return_value="/usr/bin/cursor-agent") as which:
+        assert runtime.available() is True
     which.assert_called_once_with("cursor-agent")
 
-    with patch.object(local.shutil, "which", return_value=None):
-        assert agent.available() is False
+    with patch.object(runtimes.shutil, "which", return_value=None):
+        assert runtime.available() is False
 
 
 def test_available_is_false_for_empty_cli() -> None:
-    with patch.object(local.shutil, "which") as which:
+    with patch.object(runtimes.shutil, "which") as which:
         assert AgentRuntime().available() is False
     which.assert_not_called()
 
@@ -69,7 +70,7 @@ def test_detect_keeps_only_agents_found_on_path() -> None:
     installed = {"cursor-agent", "claude"}
 
     with patch.object(
-        local.shutil,
+        runtimes.shutil,
         "which",
         side_effect=lambda cli: f"/usr/bin/{cli}" if cli in installed else None,
     ):
@@ -79,9 +80,9 @@ def test_detect_keeps_only_agents_found_on_path() -> None:
 
 
 def test_invoke_returns_error_when_cli_missing() -> None:
-    agent = CursorAgent()
-    with patch.object(local.shutil, "which", return_value=None):
-        result = agent.invoke("hi")
+    runtime = CursorRuntime()
+    with patch.object(runtimes.shutil, "which", return_value=None):
+        result = runtime.invoke("hi")
 
     assert result.ok is False
     assert "not found" in (result.error or "")
@@ -96,13 +97,13 @@ def test_invoke_parses_stream_json_stdout() -> None:
             '{"type": "result", "result": "Hello world"}',
         ]
     )
-    agent = CursorAgent()
+    runtime = CursorRuntime()
     completed = SimpleNamespace(returncode=0, stdout=stdout, stderr="")
 
-    with patch.object(local.shutil, "which", return_value="/usr/bin/cursor-agent"), patch.object(
-        local.subprocess, "run", return_value=completed
+    with patch.object(runtimes.shutil, "which", return_value="/usr/bin/cursor-agent"), patch.object(
+        runtimes.subprocess, "run", return_value=completed
     ) as run:
-        result = agent.invoke("analyze")
+        result = runtime.invoke("analyze")
 
     assert result.ok is True
     assert result.text == "Hello world"
@@ -116,15 +117,40 @@ def test_invoke_parses_stream_json_stdout() -> None:
     ]
 
 
-def test_cursor_build_argv_includes_dynamic_options() -> None:
+def test_base_runtime_parse_output_strips_stdout() -> None:
+    assert AgentRuntime().parse_output("  plain output\n") == "plain output"
+
+
+def test_cursor_parse_output_reads_stream_json() -> None:
+    stdout = "\n".join(
+        [
+            '{"type": "assistant", "message": {"content": [{"type": "text", "text": "Hello "}]}}',
+            '{"type": "text", "text": "world"}',
+        ]
+    )
+
+    assert CursorRuntime().parse_output(stdout) == "Hello world"
+
+
+def test_claude_parse_output_reads_stream_json_result_fallback() -> None:
+    stdout = '{"type": "result", "result": "final answer"}'
+
+    assert ClaudeRuntime().parse_output(stdout) == "final answer"
+
+
+def test_copilot_parse_output_uses_base_stdout_behavior() -> None:
+    assert CopilotRuntime().parse_output('{"answer": "kept raw"}\n') == '{"answer": "kept raw"}'
+
+
+def test_cursor_build_args_includes_dynamic_options() -> None:
     options = AgentInvokeOptions(
-        workspace=local.Path("/repo"),
+        workspace=runtimes.Path("/repo"),
         model="gpt-5",
         resume_session_id="session-1",
         extra_args=("--custom", "value"),
     )
 
-    assert CursorAgent().build_argv("analyze", options) == [
+    assert CursorRuntime().build_args("analyze", options) == [
         "cursor-agent",
         "-p",
         "analyze",
@@ -142,10 +168,10 @@ def test_cursor_build_argv_includes_dynamic_options() -> None:
     ]
 
 
-def test_claude_build_argv_places_prompt_after_print_flag() -> None:
+def test_claude_build_args_places_prompt_after_print_flag() -> None:
     options = AgentInvokeOptions(model="opus", extra_args=("--dangerously-skip-permissions",))
 
-    assert ClaudeCodeAgent().build_argv("inspect", options) == [
+    assert ClaudeRuntime().build_args("inspect", options) == [
         "claude",
         "-p",
         "inspect",
@@ -163,10 +189,10 @@ def test_claude_build_argv_places_prompt_after_print_flag() -> None:
     ]
 
 
-def test_gemini_build_argv_places_prompt_after_prompt_flag() -> None:
+def test_gemini_build_args_places_prompt_after_prompt_flag() -> None:
     options = AgentInvokeOptions(model="gemini-pro")
 
-    assert GeminiAgent().build_argv("summarize", options) == [
+    assert GeminiRuntime().build_args("summarize", options) == [
         "gemini",
         "-p",
         "summarize",
@@ -179,14 +205,14 @@ def test_gemini_build_argv_places_prompt_after_prompt_flag() -> None:
 
 
 def test_invoke_uses_options_for_cwd_and_timeout() -> None:
-    agent = CursorAgent()
+    runtime = CursorRuntime()
     completed = SimpleNamespace(returncode=0, stdout="ok\n", stderr="")
-    options = AgentInvokeOptions(workspace=local.Path("/tmp/project"), timeout=3.5)
+    options = AgentInvokeOptions(workspace=runtimes.Path("/tmp/project"), timeout=3.5)
 
-    with patch.object(local.shutil, "which", return_value="/usr/bin/cursor-agent"), patch.object(
-        local.subprocess, "run", return_value=completed
+    with patch.object(runtimes.shutil, "which", return_value="/usr/bin/cursor-agent"), patch.object(
+        runtimes.subprocess, "run", return_value=completed
     ) as run:
-        result = agent.invoke("go", options=options)
+        result = runtime.invoke("go", options=options)
 
     assert result.ok is True
     assert run.call_args.kwargs["cwd"] == "/tmp/project"
@@ -195,51 +221,51 @@ def test_invoke_uses_options_for_cwd_and_timeout() -> None:
 
 def test_invoke_falls_back_to_result_when_no_streaming_text() -> None:
     stdout = '{"type": "result", "result": "final answer"}'
-    agent = ClaudeCodeAgent()
+    runtime = ClaudeRuntime()
     completed = SimpleNamespace(returncode=0, stdout=stdout, stderr="")
 
-    with patch.object(local.shutil, "which", return_value="/usr/bin/claude"), patch.object(
-        local.subprocess, "run", return_value=completed
+    with patch.object(runtimes.shutil, "which", return_value="/usr/bin/claude"), patch.object(
+        runtimes.subprocess, "run", return_value=completed
     ):
-        result = agent.invoke("go")
+        result = runtime.invoke("go")
 
     assert result.text == "final answer"
 
 
 def test_invoke_returns_plain_stdout_when_not_json() -> None:
-    agent = CursorAgent()
+    runtime = CursorRuntime()
     completed = SimpleNamespace(returncode=0, stdout="just text\n", stderr="")
 
-    with patch.object(local.shutil, "which", return_value="/usr/bin/cursor-agent"), patch.object(
-        local.subprocess, "run", return_value=completed
+    with patch.object(runtimes.shutil, "which", return_value="/usr/bin/cursor-agent"), patch.object(
+        runtimes.subprocess, "run", return_value=completed
     ):
-        result = agent.invoke("go")
+        result = runtime.invoke("go")
 
     assert result.text == "just text"
 
 
 def test_invoke_captures_nonzero_exit() -> None:
-    agent = CursorAgent()
+    runtime = CursorRuntime()
     completed = SimpleNamespace(returncode=1, stdout="", stderr="boom")
 
-    with patch.object(local.shutil, "which", return_value="/usr/bin/cursor-agent"), patch.object(
-        local.subprocess, "run", return_value=completed
+    with patch.object(runtimes.shutil, "which", return_value="/usr/bin/cursor-agent"), patch.object(
+        runtimes.subprocess, "run", return_value=completed
     ):
-        result = agent.invoke("go")
+        result = runtime.invoke("go")
 
     assert result.ok is False
     assert result.error == "boom"
 
 
 def test_invoke_captures_timeout() -> None:
-    agent = CursorAgent()
+    runtime = CursorRuntime()
 
-    with patch.object(local.shutil, "which", return_value="/usr/bin/cursor-agent"), patch.object(
-        local.subprocess,
+    with patch.object(runtimes.shutil, "which", return_value="/usr/bin/cursor-agent"), patch.object(
+        runtimes.subprocess,
         "run",
         side_effect=subprocess.TimeoutExpired(cmd="cursor-agent", timeout=1.0),
     ):
-        result = agent.invoke("go", options=AgentInvokeOptions(timeout=1.0))
+        result = runtime.invoke("go", options=AgentInvokeOptions(timeout=1.0))
 
     assert result.ok is False
     assert "timed out" in (result.error or "")

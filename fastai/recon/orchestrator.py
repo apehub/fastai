@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from pathlib import Path
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from fastai.recon.collectors import WorkspaceReconCollector
@@ -11,6 +13,10 @@ from fastai.recon.renderer import OverviewRenderer
 
 if TYPE_CHECKING:
     from fastai.agents.runtimes import AgentRuntime
+
+
+logger = logging.getLogger(__name__)
+ProgressReporter = Callable[[str], None]
 
 
 @dataclass(slots=True, frozen=True)
@@ -25,7 +31,11 @@ class ReconOrchestrator:
     """Coordinate recon fact collection, agent analysis and rendering."""
 
     @staticmethod
-    def run(workspace: Path, runtime: AgentRuntime | None = None) -> ReconRunResult:
+    def run(
+        workspace: Path,
+        runtime: AgentRuntime | None = None,
+        progress: ProgressReporter | None = None,
+    ) -> ReconRunResult:
         """Run a single synchronous recon pass.
 
         Steps:
@@ -43,21 +53,48 @@ class ReconOrchestrator:
         from fastai.agents.flows.recon import ReconFlow
         from fastai.agents.runtimes import AgentRuntime
 
+        logger.info("Starting recon run workspace=%s", workspace)
+        _report_progress(progress, "Collecting workspace facts")
         facts = WorkspaceReconCollector().collect_base_facts(workspace)
+        logger.info(
+            "Collected recon facts total_files=%s markdown_files=%s python_modules=%s ecosystems=%s",
+            facts.workspace.total_files,
+            len(facts.documentation.markdown_files),
+            len(facts.python_modules),
+            len(facts.ecosystem_candidates),
+        )
 
         if runtime is None:
+            _report_progress(progress, "Detecting local agent runtime")
             available = AgentRuntime.detect()
             runtime = available[0] if available else None
+            logger.info(
+                "Detected agent runtimes count=%s selected=%s",
+                len(available),
+                runtime.__class__.__name__ if runtime is not None else None,
+            )
+        else:
+            logger.info("Using supplied agent runtime runtime=%s", runtime.__class__.__name__)
 
         if runtime is not None:
+            _report_progress(progress, f"Analyzing project context, agent runtime={runtime.__class__.__name__}")
             analysis = ReconFlow(runtime, workspace=workspace).run(facts)
         else:
+            logger.info("No agent runtime available; using null recon analyzer")
+            _report_progress(progress, "Analyzing project context")
             analysis = NullReconAnalyzer().analyze(facts)
 
+        _report_progress(progress, "Rendering system overview")
         overview = OverviewRenderer().render(facts, analysis)
+        logger.info("Rendered recon overview chars=%s", len(overview))
         return ReconRunResult(
             facts=facts,
             requests=[],
             analysis=analysis,
             overview_markdown=overview,
         )
+
+
+def _report_progress(progress: ProgressReporter | None, message: str) -> None:
+    if progress is not None:
+        progress(message)

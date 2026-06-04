@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+import logging
 from pathlib import Path
 
 from fastai.recon.models import (
@@ -15,6 +16,8 @@ from fastai.recon.models import (
     WorkspaceSummary,
 )
 from fastai.tools.SCM import SCM, SCMError
+
+logger = logging.getLogger(__name__)
 
 _IGNORED_PARTS = {".git", ".worktrees", "__pycache__", ".venv"}
 _ECOSYSTEM_MARKERS = {
@@ -40,6 +43,7 @@ class WorkspaceReconCollector:
     def collect_base_facts(self, workspace: Path) -> ReconFacts:
         """Collect the first pass of high-signal workspace facts."""
 
+        logger.info("Collecting base recon facts workspace=%s", workspace)
         files = [path for path in workspace.rglob("*") if path.is_file() and not self._is_ignored(path)]
         top_level_directories = sorted(
             path.relative_to(workspace)
@@ -54,6 +58,13 @@ class WorkspaceReconCollector:
         markdown_files = self.iter_markdown_files(workspace)
         python_modules = self.iter_python_modules(workspace)
         file_type_counts = dict(sorted(Counter(path.suffix or "<no-ext>" for path in files).items()))
+        logger.info(
+            "Collected workspace inventory total_files=%s top_level_directories=%s top_level_files=%s file_types=%s",
+            len(files),
+            len(top_level_directories),
+            len(top_level_files),
+            len(file_type_counts),
+        )
 
         return ReconFacts(
             workspace=WorkspaceSummary(
@@ -87,18 +98,27 @@ class WorkspaceReconCollector:
         parsing and richer summarization.
         """
 
+        logger.info("Collecting requested recon facts requests=%s", len(requests))
         sampled_files = list(facts.sampled_files)
         for request in requests:
             if request.kind is FactRequestKind.READ_FILE_SUMMARY:
                 target = workspace / request.target
                 if target.is_file():
+                    logger.info(
+                        "Summarizing requested file target=%s budget=%s",
+                        request.target,
+                        request.budget,
+                    )
                     sampled_files.append(
                         SampledFile(
                             path=target.relative_to(workspace),
                             summary=self._summarize_file(target, request.budget),
                         )
                     )
+                else:
+                    logger.warning("Requested recon file does not exist target=%s", request.target)
 
+        logger.info("Collected requested recon facts sampled_files=%s", len(sampled_files))
         return ReconFacts(
             workspace=facts.workspace,
             scm=facts.scm,
@@ -138,13 +158,20 @@ class WorkspaceReconCollector:
 
         scm = SCM.detect(workspace)
         if scm is None:
+            logger.info("No SCM detected workspace=%s", workspace)
             return ScmFacts(ignore_sources=self._discover_ignore_sources(workspace))
 
         try:
             repo_url = scm.repo()
         except SCMError:
+            logger.warning("SCM repo URL lookup failed scm=%s", scm.__class__.__name__)
             repo_url = None
 
+        logger.info(
+            "Collected SCM facts kind=%s repo_url_present=%s",
+            scm.__class__.__name__.lower(),
+            repo_url is not None,
+        )
         return ScmFacts(
             kind=scm.__class__.__name__.lower(),
             repo_url=repo_url,
@@ -174,6 +201,13 @@ class WorkspaceReconCollector:
             if lowered in {"scripts", "script", "tools", "bin"}:
                 script_directories.append(rel)
 
+        logger.info(
+            "Collected structure facts source_dirs=%s test_dirs=%s resource_dirs=%s script_dirs=%s",
+            len(source_directories),
+            len(test_directories),
+            len(resource_directories),
+            len(script_directories),
+        )
         return StructureFacts(
             source_directories=sorted(source_directories),
             test_directories=sorted(test_directories),
@@ -193,7 +227,13 @@ class WorkspaceReconCollector:
                 if path.is_file() and not self._is_ignored(path)
             ]
             if evidence:
+                logger.info(
+                    "Detected ecosystem candidate name=%s evidence_count=%s",
+                    name,
+                    len(evidence),
+                )
                 candidates.append(EcosystemCandidate(name=name, evidence=sorted(set(evidence))))
+        logger.info("Detected ecosystem candidates count=%s", len(candidates))
         return candidates
 
     def _discover_ignore_sources(self, workspace: Path) -> list[Path]:

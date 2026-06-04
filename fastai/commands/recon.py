@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import typer  # type: ignore[reportMissingImports]
+
 from fastai.commands.base import BaseCommand, Command, CommandContext, CommandOption
 from fastai.recon.orchestrator import ReconOrchestrator
 
@@ -32,7 +34,12 @@ class ReconCommand(BaseCommand):
         )
         outfile = Path(outfile)
         outfile.parent.mkdir(parents=True, exist_ok=True)
-        result = ReconOrchestrator().run(context.workspace)
+
+        def report_progress(message: str) -> None:
+            typer.echo(f"[recon] {message}...", err=True)
+
+        result = ReconOrchestrator().run(context.workspace, progress=report_progress)
+        typer.echo(f"[recon] Writing overview to {outfile}...", err=True)
         outfile.write_text(result.overview_markdown, encoding="utf-8")
-        print(f"Wrote system overview to {outfile}")
+        typer.echo(f"Wrote system overview to {outfile}")
         return 0

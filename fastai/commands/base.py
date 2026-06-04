@@ -12,7 +12,9 @@ from pathlib import Path
 import sys
 from typing import Any
 from typing import ClassVar
+from typing import Protocol
 from typing import TypeVar
+from typing import cast
 
 import typer  # type: ignore[reportMissingImports]
 
@@ -20,6 +22,14 @@ import fastai.commands as commands_pkg
 
 _CommandT = TypeVar("_CommandT", bound="BaseCommand")
 _SKIP_MODULES = frozenset({"__init__", "base"})
+
+
+class _SignedCommandCallback(Protocol):
+    """Callable command callback with an inspectable synthetic signature."""
+
+    __signature__: inspect.Signature
+
+    def __call__(self, ctx: typer.Context, **kwargs: Any) -> int: ...
 
 
 # command context
@@ -92,7 +102,8 @@ class BaseCommand(ABC):
             command_context = self.build_context()
             return self.run(command_context, **kwargs)
 
-        callback.__signature__ = inspect.Signature(
+        signed_callback = cast(_SignedCommandCallback, callback)
+        signed_callback.__signature__ = inspect.Signature(
             parameters=[
                 inspect.Parameter(
                     "ctx",
@@ -106,7 +117,7 @@ class BaseCommand(ABC):
             ],
             return_annotation=int,
         )
-        return callback
+        return signed_callback
 
     @abstractmethod
     def run(self, context: CommandContext, **kwargs: Any) -> int:
@@ -143,8 +154,6 @@ class CommandDiscovery:
     @classmethod
     def discover(cls) -> list[type[BaseCommand]]:
         """Return built-in command classes discovered in ``fastai.commands``."""
-
-        CommandRegistry.clear()
 
         for _finder, module_name, _is_pkg in pkgutil.iter_modules(commands_pkg.__path__):
             if module_name.startswith("_") or module_name in _SKIP_MODULES:

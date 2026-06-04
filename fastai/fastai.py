@@ -15,15 +15,15 @@ app = typer.Typer(
 
 
 def _register_commands() -> None:
-    for command_cls in CommandDiscovery.discover():
-        command = command_cls()
-        meta = command.meta
+    for cls in CommandDiscovery.discover():
+        cmd = cls()
+        meta = cmd.meta
 
         app.command(
             name=meta.name,
             help=meta.description,
             short_help=meta.usage or meta.description,
-        )(command.typer_callback())
+        )(cmd.typer_callback())
 
 
 @app.callback()

@@ -57,6 +57,14 @@ class CliCommandTests(unittest.TestCase):
         self.assertEqual(0, completed.returncode)
         self.assertIn("system overview", completed.stdout.lower())
 
+    def test_recon_prints_progress_to_stderr(self):
+        completed = self.run_cli("recon")
+
+        self.assertEqual(0, completed.returncode)
+        self.assertIn("Collecting workspace facts", completed.stderr)
+        self.assertIn("Analyzing project context", completed.stderr)
+        self.assertIn("Rendering system overview", completed.stderr)
+
     def test_recon_accepts_output_option(self):
         output_path = self.workspace / "tmp" / "overview.md"
         completed = self.run_cli("recon", "--output", str(output_path))
